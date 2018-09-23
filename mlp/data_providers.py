@@ -194,19 +194,27 @@ class MetOfficeDataProvider(DataProvider):
             'Data file does not exist at expected path: ' + data_path
         )
         # load raw data from text file
-        # ...
+        lines = np.loadtxt("../data/HadSSP_daily_qc.txt", skiprows=3)
         # filter out all missing datapoints and flatten to a vector
-        # ...
+        # Flatten the array and only keep the values above -1
+        days = []
+        for line in lines:
+            days.extend(line[2:] > -1)
         # normalise data to zero mean, unit standard deviation
-        # ...
+        # Adjust mean to 0
+        days -= np.mean(days)
+        # Adjust std to 1
+        days = days/np.std(days)
         # convert from flat sequence to windowed data
-        # ...
+        windows = [days[window_size*i:(window_size*i+3)] for i in range(0, int(len(days)/3))]
         # inputs are first (window_size - 1) entries in windows
-        # inputs = ...
+        inputs = [window[:len(window)-1] for window in windows]
         # targets are last entry in windows
-        # targets = ...
+        targets = [window[-1] for window in windows]
         # initialise base class with inputs and targets arrays
-        # super(MetOfficeDataProvider, self).__init__(
+        #super(MetOfficeDataProvider, self).__init__(
         #     inputs, targets, batch_size, max_num_batches, shuffle_order, rng)
+        return inputs, targets
+        
     def __next__(self):
             return self.next()
