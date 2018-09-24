@@ -161,7 +161,8 @@ class MNISTDataProvider(DataProvider):
         for target in int_targets:
             K_encoded_target = [0] * K
             K_encoded_target[target-1] = 1
-            K_encoded_targets.append(K_encoded_target)
+            K_encoded_targets.append(np.asarray(K_encoded_target, dtype=np.float32))
+        K_encoded_targets = np.asarray(K_encoded_targets)
         return K_encoded_targets
 
 
@@ -206,15 +207,15 @@ class MetOfficeDataProvider(DataProvider):
         # Adjust std to 1
         days = days/np.std(days)
         # convert from flat sequence to windowed data
-        windows = [days[window_size*i:(window_size*i+3)] for i in range(0, int(len(days)/3))]
+        windows = [days[window_size*i:(window_size*i+(window_size))] for i in range(0, int(len(days)/window_size))]
         # inputs are first (window_size - 1) entries in windows
-        inputs = [window[:len(window)-1] for window in windows]
+        inputs = np.asarray([window[:len(window)-1] for window in windows])
         # targets are last entry in windows
-        targets = [window[-1] for window in windows]
+        targets = np.asarray([window[-1] for window in windows])
         # initialise base class with inputs and targets arrays
-        #super(MetOfficeDataProvider, self).__init__(
-        #     inputs, targets, batch_size, max_num_batches, shuffle_order, rng)
-        return inputs, targets
+        super(MetOfficeDataProvider, self).__init__(
+             inputs, targets, batch_size, max_num_batches, shuffle_order, rng)
+        # return inputs, targets
         
     def __next__(self):
             return self.next()
