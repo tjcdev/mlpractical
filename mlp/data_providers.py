@@ -195,12 +195,19 @@ class MetOfficeDataProvider(DataProvider):
             'Data file does not exist at expected path: ' + data_path
         )
         # load raw data from text file
-        lines = np.loadtxt("../data/HadSSP_daily_qc.txt", skiprows=3)
+        lines = np.loadtxt(data_path, skiprows=3)
         # filter out all missing datapoints and flatten to a vector
         # Flatten the array and only keep the values above -1
-        days = []
+        # filter out all missing datapoints and flatten to a vector
+        # Flatten the array and only keep the values above -1
+        daysVal = []
+        daysBool = []
         for line in lines:
-            days.extend(line[2:] > -1)
+            daysVal.extend(line[2:])
+            daysBool.extend(line[2:] > -1)
+        daysBool = np.asarray(daysBool, dtype=np.bool)
+        daysVal = np.asarray(daysVal, dtype=np.float)
+        days = daysVal[daysBool]
         # normalise data to zero mean, unit standard deviation
         # Adjust mean to 0
         days -= np.mean(days)
