@@ -1,3 +1,6 @@
+#checkpoints
+notebooks/.ipynb_checkpoints/*
+
 #dropbox stuff
 *.dropbox*
 
