@@ -241,7 +241,13 @@ class AdamLearningRule(GradientDescentLearningRule):
                 with respect to each of the parameters passed to `initialise`
                 previously, with this list expected to be in the same order.
         """
-        raise NotImplementedError
+        for param, mom_1, mom_2, grad in zip(
+                self.params, self.moms_1, self.moms_2, grads_wrt_params):
+            
+            mom_1 = self.beta_1*mom_1 + (1-self.beta_1)*grad
+            mom_2 = self.beta_2*mom_2 + (1-self.beta_2)*grad**2
+            param -= (self.learning_rate * mom_1 /
+                      (mom_2 + self.epsilon)**0.5)
 
 class AdamLearningRuleWithWeightDecay(GradientDescentLearningRule):
     """Adaptive moments (Adam) learning rule with Weight Decay.
@@ -456,6 +462,6 @@ class RMSPropLearningRule(GradientDescentLearningRule):
         """        
         for param, mov_av, grad in zip(
                 self.params, self.mov_avs, grads_wrt_params):
-            rms_grad = self.beta*mov_av + (1-self.beta)*grad**2
+            mov_av = self.beta*mov_av + (1-self.beta)*grad**2
             param -= (self.learning_rate * grad /
                       (mov_av + self.epsilon)**0.5)
