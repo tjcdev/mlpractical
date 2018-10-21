@@ -226,7 +226,11 @@ class AdamLearningRule(GradientDescentLearningRule):
         For this learning rule this corresponds to zeroing the estimates of
         the first and second moments of the gradients.
         """
-        raise NotImplementedError
+        for mom_1 in zip(self.moms_1):
+            mom_1 *= 0.
+        for mom_2 in zip(self.moms_2):
+            mom_2 *= 0.
+        self.step_count = 0
 
     def update_params(self, grads_wrt_params):
         """Applies a single update to all parameters.
