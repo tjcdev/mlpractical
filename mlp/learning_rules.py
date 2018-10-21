@@ -430,7 +430,6 @@ class RMSPropLearningRule(GradientDescentLearningRule):
         """        
         super(RMSPropLearningRule, self).initialise(params)
         self.rms_grads = []
-        # TODO: should I initialise them randomly (gaussian distribution)
         for param in self.params:
             self.rms_grads.append(np.zeros_like(param))
 
@@ -450,9 +449,9 @@ class RMSPropLearningRule(GradientDescentLearningRule):
             grads_wrt_params: A list of gradients of the scalar loss function
                 with respect to each of the parameters passed to `initialise`
                 previously, with this list expected to be in the same order.
-        """
-        for param, sum_sq_grad, grad in zip(
-                self.params, self.sum_sq_grads, grads_wrt_params):
-            sum_sq_grad = self.beta*sum_sq_grad + (1-self.beta)*grad**2
+        """        
+        for param, rms_grad, grad in zip(
+                self.params, self.rms_grads, grads_wrt_params):
+            rms_grad = self.beta*rms_grad + (1-self.beta)*grad**2
             param -= (self.learning_rate * grad /
-                      (sum_sq_grad + self.epsilon)**0.5)
+                      (rms_grad + self.epsilon)**0.5)
