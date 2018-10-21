@@ -65,12 +65,22 @@ class CosineAnnealingWithWarmRestarts(object):
                 attributes of this object.
             epoch_number: Integer index of training epoch about to be run.
         """
+        # Should I do this but +1 - I don't know if the equation wants it to be 0 on restart
+        # Calculate how many epochs we have had since the last restart
         epochs_since_restart = epoch_number % self.total_epochs_per_period
+        
         
         cos_value = (1 + np.cos(np.pi*epochs_since_restart / epoch_number))
         
         n_t = self.min_learning_rate + 0.5*(self.max_learning_rate - self.min_learning_rate)*cos_value
         
-        
+        # Only run on restart
+        if epochs_since_restart == 0: 
+            # Update the max learning rate using the self.max_learning_rate_discount_factor
+            self.max_learning_rate = self.max_learning_rate*self.max_learning_rate_discount_factor
 
-
+            # TODO: Is this this correct - should I be adding or timesing this?
+            self.total_epochs_per_period += self.period_iteration_expansion_factor
+            
+        # Update the learning rate
+        learning_rule.learning_rate = learning_rule.learning_rate*n_t
