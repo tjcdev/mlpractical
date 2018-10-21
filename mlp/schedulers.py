@@ -80,7 +80,8 @@ class CosineAnnealingWithWarmRestarts(object):
             self.max_learning_rate = self.max_learning_rate*self.max_learning_rate_discount_factor
             
             # Set the number of epochs to occur next period
-            self.total_epochs_per_period += self.total_epochs_per_period*self.period_iteration_expansion_factor
+            self.total_epochs_per_period = self.total_epochs_per_period*self.period_iteration_expansion_factor
+            
             # Reset the number of epochs since restart
             self.t_cur = 0
         else:   
