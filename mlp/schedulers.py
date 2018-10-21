@@ -65,21 +65,17 @@ class CosineAnnealingWithWarmRestarts(object):
                 any scheduled hyperparameters to be altered should be
                 attributes of this object.
             epoch_number: Integer index of training epoch about to be run.
-        """        
-        cos_value = (1 + np.cos(np.pi*self.t_cur / self.total_epochs_per_period))
+        """   
+        cos_value = (1 + np.cos((np.pi*self.t_cur) / self.total_epochs_per_period))
         
         n_t = self.min_learning_rate + 0.5*(self.max_learning_rate - self.min_learning_rate)*cos_value
                 
-        # How many epochs we have had since the last restart
-        self.t_cur += 1
-        
         # Update the learning rate
         learning_rule.learning_rate = n_t
-        
+            
         # If the number of epochs we have had since the last restart is equal to the epochs for this period
         # then restart
-        if self.t_cur == self.total_epochs_per_period: 
-            
+        if self.t_cur == (self.total_epochs_per_period-1): 
             # Update the max learning rate using the self.max_learning_rate_discount_factor
             self.max_learning_rate = self.max_learning_rate*self.max_learning_rate_discount_factor
             
@@ -87,6 +83,9 @@ class CosineAnnealingWithWarmRestarts(object):
             self.total_epochs_per_period += self.total_epochs_per_period*self.period_iteration_expansion_factor
             # Reset the number of epochs since restart
             self.t_cur = 0
-           
+        else:   
+            # How many epochs we have had since the last restart
+            self.t_cur += 1
+        
         return learning_rule.learning_rate
             
