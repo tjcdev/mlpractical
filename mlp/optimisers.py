@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class Optimiser(object):
     """Basic model optimiser."""
 
-    def __init__(self, model, error, learning_rule, train_dataset,
+    def __init__(self, model, error, learning_rule, train_dataset, scheduler,
                  valid_dataset=None, data_monitors=None, notebook=False):
         """Create a new optimiser instance.
 
@@ -41,6 +41,7 @@ class Optimiser(object):
         self.train_dataset = train_dataset
         self.valid_dataset = valid_dataset
         self.data_monitors = OrderedDict([('error', error)])
+        self.scheduler = scheduler
         if data_monitors is not None:
             self.data_monitors.update(data_monitors)
         self.notebook = notebook
