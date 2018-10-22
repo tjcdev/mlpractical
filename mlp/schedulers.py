@@ -32,6 +32,8 @@ class ConstantLearningRateScheduler(object):
             epoch_number: Integer index of training epoch about to be run.
         """
         learning_rule.learning_rate = self.learning_rate
+        
+        return self.learning_rate
 
 class CosineAnnealingWithWarmRestarts(object):
     """Cosine annealing scheduler, implemented as in https://arxiv.org/pdf/1608.03983.pdf"""
