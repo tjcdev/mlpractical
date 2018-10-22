@@ -54,8 +54,6 @@ class CosineAnnealingWithWarmRestarts(object):
 
         self.max_learning_rate_discount_factor = max_learning_rate_discount_factor
         self.period_iteration_expansion_factor = period_iteration_expansion_factor
-        
-        self.t_cur = 0
 
     def update_learning_rule(self, learning_rule, epoch_number):
         """Update the hyperparameters of the learning rule.
@@ -67,28 +65,26 @@ class CosineAnnealingWithWarmRestarts(object):
                 any scheduled hyperparameters to be altered should be
                 attributes of this object.
             epoch_number: Integer index of training epoch about to be run.
-        """   
-        cos_value = (1 + np.cos((np.pi*self.t_cur) / self.total_epochs_per_period))
+        """       
+        bound = self.total_epochs_per_period
+        period_number = 0
+        t_cur = epoch_number
+        while epoch_number >= bound:
+            period_number += 1
+            number_of_epochs_in_period = self.total_epochs_per_period * (self.period_iteration_expansion_factor**period_number)
+            t_cur -= bound 
+            bound += number_of_epochs_in_period  
+              
+        current_max = self.max_learning_rate*(self.max_learning_rate_discount_factor**period_number)
         
-        n_t = self.min_learning_rate + 0.5*(self.max_learning_rate - self.min_learning_rate)*cos_value
+        epochs_in_current_period = self.total_epochs_per_period*(self.period_iteration_expansion_factor**period_number)
+                
+        cos_value = (1 + np.cos((np.pi*t_cur) / epochs_in_current_period))
+        
+        n_t = self.min_learning_rate + 0.5*(current_max - self.min_learning_rate)*cos_value
                 
         # Update the learning rate
         learning_rule.learning_rate = n_t
-            
-        # If the number of epochs we have had since the last restart is equal to the epochs for this period
-        # then restart
-        if self.t_cur == (self.total_epochs_per_period-1): 
-            # Update the max learning rate using the self.max_learning_rate_discount_factor
-            self.max_learning_rate = self.max_learning_rate*self.max_learning_rate_discount_factor
-            
-            # Set the number of epochs to occur next period
-            self.total_epochs_per_period = self.total_epochs_per_period*self.period_iteration_expansion_factor
-            
-            # Reset the number of epochs since restart
-            self.t_cur = 0
-        else:   
-            # How many epochs we have had since the last restart
-            self.t_cur += 1
         
         return learning_rule.learning_rate
             
