@@ -66,18 +66,18 @@ class CosineAnnealingWithWarmRestarts(object):
                 attributes of this object.
             epoch_number: Integer index of training epoch about to be run.
         """       
-        bound = self.total_epochs_per_period
+        bound = 0
         period_number = 0
         t_cur = epoch_number
         while epoch_number >= bound:
-            period_number += 1
-            number_of_epochs_in_period = self.total_epochs_per_period * (self.period_iteration_expansion_factor**period_number)
-            t_cur -= bound 
+            number_of_epochs_in_period = self.total_epochs_per_period * (self.period_iteration_expansion_factor**period_number) 
+            t_cur = epoch_number - bound
             bound += number_of_epochs_in_period  
-              
-        current_max = self.max_learning_rate*(self.max_learning_rate_discount_factor**period_number)
+            period_number += 1
         
-        epochs_in_current_period = self.total_epochs_per_period*(self.period_iteration_expansion_factor**period_number)
+        current_max = self.max_learning_rate*(self.max_learning_rate_discount_factor**(period_number-1))
+        
+        epochs_in_current_period = self.total_epochs_per_period*(self.period_iteration_expansion_factor**(period_number-1))
                 
         cos_value = (1 + np.cos((np.pi*t_cur) / epochs_in_current_period))
         
