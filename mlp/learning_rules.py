@@ -354,18 +354,8 @@ class AdamLearningRuleWithWeightDecay(GradientDescentLearningRule):
             
             rhs = param*self.weight_decay
             rhs += (self.learning_rate*mom_1 / (np.sqrt(mom_2) + self.epsilon))
-            # rhs *= (self.learning_rate / self.initial_learning_rate)      
+            rhs *= (self.learning_rate / self.initial_learning_rate)      
             param -= rhs
-        '''
-        for param, mom_1, mom_2, grad in zip(
-                self.params, self.moms_1, self.moms_2, grads_wrt_params):
-            mom_1 = self.beta_1*mom_1 + (1-self.beta_1**self.step_count)*grad
-            mom_2 = self.beta_2*mom_2 + (1-self.beta_2**self.step_count)*grad**2
-            # TODO: add the (self.learning_rate / self.initial_learning_rate)*
-            
-            param -= (self.learning_rate / self.initial_learning_rate)*(self.initial_learning_rate * mom_1 /
-                      ((mom_2 + self.epsilon)**0.5))  + (self.weight_decay*param)
-        '''
 
 
 class AdaGradLearningRule(GradientDescentLearningRule):
