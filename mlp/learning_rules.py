@@ -335,6 +335,11 @@ class AdamLearningRuleWithWeightDecay(GradientDescentLearningRule):
         # tip:
         # ηt * initial_learning_rate = learning_rate
         # ηt = learning_rate / initial_learning_rate
+        
+        # Things to try if it doesn't work:
+        # introduce the n_t
+        # increment step_count
+        
         for param, mom_1, mom_2, grad in zip(
                 self.params, self.moms_1, self.moms_2, grads_wrt_params):
             mom_1 *= self.beta_1
