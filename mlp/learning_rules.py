@@ -342,6 +342,8 @@ class AdamLearningRuleWithWeightDecay(GradientDescentLearningRule):
         
         for param, mom_1, mom_2, grad in zip(
                 self.params, self.moms_1, self.moms_2, grads_wrt_params):
+            self.step_count += 1
+            
             mom_1 *= self.beta_1
             mom_1 += (1 - self.beta_1)*grad
             mom_1 /= (1 - self.beta_1**self.step_count)
