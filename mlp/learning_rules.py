@@ -466,17 +466,17 @@ class RMSPropLearningRule(GradientDescentLearningRule):
                 update.
         """        
         super(RMSPropLearningRule, self).initialise(params)
-        self.mov_avs = []
+        self.movs = []
         for param in self.params:
-            self.mov_avs.append(np.zeros_like(param))
+            self.movs.append(np.zeros_like(param))
 
     def reset(self):
         """Resets any additional state variables to their initial values.
         For this learning rule this corresponds to zeroing all gradient
         second moment estimates.
         """
-        for mov_av in zip(self.mov_avs):
-            mov_av *= 0.
+        for mov in zip(self.movs):
+            mov *= 0.
 
     def update_params(self, grads_wrt_params):
         """Applies a single update to all parameters.
@@ -487,8 +487,9 @@ class RMSPropLearningRule(GradientDescentLearningRule):
                 with respect to each of the parameters passed to `initialise`
                 previously, with this list expected to be in the same order.
         """        
-        for param, mov_av, grad in zip(
-                self.params, self.mov_avs, grads_wrt_params):
-            mov_av = self.beta*mov_av + (1-self.beta)*grad**2
+        for param, mov, grad in zip(
+                self.params, self.movs, grads_wrt_params):
+            mov *= self.beta
+            mov += (1-self.beta)*grad**2
             param -= (self.learning_rate * grad /
-                      (mov_av + self.epsilon)**0.5)
+                      (mov + self.epsilon)**0.5)
