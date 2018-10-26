@@ -244,8 +244,12 @@ class AdamLearningRule(GradientDescentLearningRule):
         for param, mom_1, mom_2, grad in zip(
                 self.params, self.moms_1, self.moms_2, grads_wrt_params):
             
-            mom_1 = self.beta_1*mom_1 + (1-self.beta_1)*grad
-            mom_2 = self.beta_2*mom_2 + (1-self.beta_2)*grad**2
+            mom_1 *= self.beta_1
+            mom_1 += (1-self.beta_1)*grad
+
+            mom_2 *= self.beta_2
+            mom_2 += (1-self.beta_2)*grad**2
+            
             param -= (self.learning_rate * mom_1 /
                       (mom_2 + self.epsilon)**0.5)
 
