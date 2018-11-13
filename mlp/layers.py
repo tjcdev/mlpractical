@@ -15,6 +15,7 @@ respect to the layer parameters.
 import numpy as np
 import mlp.initialisers as init
 from mlp import DEFAULT_SEED
+import mlp.im2col as im
 
 
 class Layer(object):
@@ -448,6 +449,12 @@ class ConvolutionalLayer(LayerWithParameters):
         Returns:
             outputs: Array of layer outputs of shape (batch_size, num_output_channels, output_height, output_width).
         """
+        print(inputs)
+        print(self.kernel_height)
+        print(self.kernel_width)
+        inputs_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width)
+        print(inputs_col.shape)
+        
         
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
