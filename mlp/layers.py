@@ -449,10 +449,8 @@ class ConvolutionalLayer(LayerWithParameters):
         Returns:
             outputs: Array of layer outputs of shape (batch_size, num_output_channels, output_height, output_width).
         """
-        print(inputs)
-        print(self.kernel_height)
-        print(self.kernel_width)
         inputs_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width)
+        print(inputs.shape)
         print(inputs_col.shape)
         
         
