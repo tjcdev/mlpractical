@@ -437,7 +437,7 @@ class ConvolutionalLayer(LayerWithParameters):
         self.biases = self.biases_init(num_output_channels)
         self.kernels_penalty = kernels_penalty
         self.biases_penalty = biases_penalty
-
+        
         self.cache = None
 
     def fprop(self, inputs):
@@ -448,12 +448,27 @@ class ConvolutionalLayer(LayerWithParameters):
             inputs: Array of layer inputs of shape (batch_size, num_input_channels, image_height, image_width).
         Returns:
             outputs: Array of layer outputs of shape (batch_size, num_output_channels, output_height, output_width).
-        """
-        inputs_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width)
-        print(inputs.shape)
-        print(inputs_col.shape)
+        """ 
+        X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width)
+        W_col = self.kernels.reshape(self.kernels_shape[0], -1)
+            
+        out = np.dot(W_col, X_col) + self.biases[:, None]
         
+        output_height = inputs.shape[2] - self.kernel_height + 1
+        output_width = inputs.shape[3] - self.kernel_width + 1
         
+        out = out.reshape(inputs.shape[0], self.kernels_shape[0], output_height, output_width)
+        
+        print(out.shape)
+        
+        return out
+        '''       
+        out = out.transpose(3, 0, 1, 2)
+
+        cache = (X, W, b, stride, padding, X_col)
+
+        return out, cache
+        '''
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
         """Back propagates gradients through a layer.
