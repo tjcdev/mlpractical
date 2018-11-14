@@ -449,17 +449,15 @@ class ConvolutionalLayer(LayerWithParameters):
         Returns:
             outputs: Array of layer outputs of shape (batch_size, num_output_channels, output_height, output_width).
         """ 
-        X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width)
+        X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
         W_col = self.kernels.reshape(self.kernels_shape[0], -1)
-            
+        
         out = np.dot(W_col, X_col) + self.biases[:, None]
         
         output_height = inputs.shape[2] - self.kernel_height + 1
         output_width = inputs.shape[3] - self.kernel_width + 1
         
-        out = out.reshape(inputs.shape[0], self.kernels_shape[0], output_height, output_width)
-        
-        print(out.shape)
+        out = out.reshape(inputs.shape[0], self.num_output_channels, output_height, output_width)
         
         return out
         '''       
