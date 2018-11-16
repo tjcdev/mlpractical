@@ -618,7 +618,36 @@ class MaxPooling2DLayer(Layer):
         :param grads_wrt_outputs: The grads wrt to the outputs, of shape equal to that of the outputs.
         :return: grads_wrt_input, of shape equal to the inputs.
         """
-        raise NotImplementedError
+        n = inputs.shape[0]
+        d = inputs.shape[1]
+        h = inputs.shape[2]
+        w = inputs.shape[3]
+        padding=0
+        
+        X_reshaped = inputs.reshape(n * d, 1, h, w)
+
+        X_col = im.im2col_indices(X_reshaped, self.size, self.size, padding, self.stride)
+        
+        dX_col = np.zeros_like(X_col)
+        
+        dout_flat = grads_wrt_outputs.transpose(2, 3, 0, 1).ravel()
+
+        max_idx = np.argmax(X_col, axis=0)
+        
+        # Fill the maximum index of each column with the gradient
+
+        # Essentially putting each of the 9800 grads
+        # to one of the 4 row in 9800 locations, one at each column
+        dX_col[max_idx, range(max_idx.size)] = dout_flat
+
+        # We now have the stretched matrix of 4x9800, then undo it with col2im operation
+        # dX would be 50x1x28x28
+        dX = im.col2im_indices(dX_col, (n * d, 1, h, w), self.size, self.size, padding=0, stride=self.stride)
+
+        # Reshape back to match the input dimension: 5x10x28x28
+        dX = dX.reshape(inputs.shape)
+        
+        return dX
 
 
 class ReluLayer(Layer):
