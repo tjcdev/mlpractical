@@ -514,7 +514,16 @@ class ConvolutionalLayer(LayerWithParameters):
             list of arrays of gradients with respect to the layer parameters
             `[grads_wrt_kernels, grads_wrt_biases]`.
         """
-        raise NotImplementedError
+        dout_reshaped = grads_wrt_outputs.transpose(1, 2, 3, 0).reshape(self.kernels_shape[0], -1)
+        X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
+
+        dW = np.dot(dout_reshaped, X_col.T)
+        dW = dW.reshape(self.kernels.shape)
+    
+        db = np.sum(grads_wrt_outputs, axis=(0, 2, 3))
+        db = db.reshape(self.kernels_shape[0], -1)
+
+        return [dW, db]
 
     def params_penalty(self):
         """Returns the parameter dependent penalty term for this layer.
