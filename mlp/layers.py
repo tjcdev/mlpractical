@@ -584,7 +584,30 @@ class MaxPooling2DLayer(Layer):
         :return: The output of the max pooling operation. Assuming a stride=2 the output should have a shape of
         (b, c, (input_height - size)/stride + 1, (input_width - size)/stride + 1)
         """
-        raise NotImplementedError
+        # First, reshape it to 50x1x28x28 to make im2col arranges it fully in column
+        
+        n = inputs.shape[0]
+        d = inputs.shape[1]
+        h = inputs.shape[2]
+        w = inputs.shape[3]
+        padding=0
+        
+        X_reshaped = inputs.reshape(n * d, 1, h, w)
+
+        X_col = im.im2col_indices(X_reshaped, self.size, self.size, padding, self.stride)
+
+        max_idx = np.argmax(X_col, axis=0)
+
+        out = X_col[max_idx, range(max_idx.size)]
+
+        h_out = int((h - self.size)/self.stride + 1)
+        w_out = int((w - self.size)/self.stride + 1)
+
+        out = out.reshape(h_out, w_out, n, d)
+
+        out = out.transpose(2, 3, 0, 1)
+        
+        return out
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
         """
