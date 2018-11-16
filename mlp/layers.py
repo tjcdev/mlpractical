@@ -459,6 +459,8 @@ class ConvolutionalLayer(LayerWithParameters):
         
         out = out.reshape(inputs.shape[0], self.num_output_channels, output_height, output_width)
         
+        self.cache = (inputs, W_col, self.biases, X_col)
+        
         return out
         '''       
         out = out.transpose(3, 0, 1, 2)
@@ -484,9 +486,23 @@ class ConvolutionalLayer(LayerWithParameters):
         Returns:
             Array of gradients with respect to the layer inputs of shape
             (batch_size, num_input_channels, input_height, input_width).
-        """
-        raise NotImplementedError
+        """        
+        # TODO: use the cache for this bit and you might make it more efficient
+        X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
+        
+        dout_reshaped = grads_wrt_outputs.transpose(1, 2, 3, 0).reshape(self.kernels_shape[0], -1)     
+        dW = np.dot(dout_reshaped, X_col.T)
+        dW = dW.reshape(self.kernels.shape)
+        
+        W_reshape = self.kernels.reshape(self.kernels_shape[0], -1)
+        
+        dX_col = np.dot(W_reshape.T, dout_reshaped)
+        
+        dX = im.col2im_indices(dX_col, inputs.shape, self.kernel_height, self.kernel_width, padding=0)
 
+        return dX
+        
+        
     def grads_wrt_params(self, inputs, grads_wrt_outputs):
         """Calculates gradients with respect to layer parameters.
         Args:
