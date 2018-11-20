@@ -1,0 +1,1 @@
+python mlp/pytorch_experiment_scripts/train_evaluate_emnist_classification_system.py --batch_size 100 --seed 0 --num_filters 32 --dim_reduction_type max_pooling --experiment_name tutorial_exp_1 --use_gpu False
