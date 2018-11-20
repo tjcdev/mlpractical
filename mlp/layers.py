@@ -457,7 +457,9 @@ class ConvolutionalLayer(LayerWithParameters):
         output_height = inputs.shape[2] - self.kernel_height + 1
         output_width = inputs.shape[3] - self.kernel_width + 1
         
-        out = out.reshape(inputs.shape[0], self.num_output_channels, output_height, output_width)
+        out = out.reshape(self.num_output_channels, output_height, output_width, inputs.shape[0])
+        
+        out = out.transpose(3, 0, 1, 2)
         
         self.cache = (inputs, W_col, self.biases, X_col)
         
