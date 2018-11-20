@@ -116,7 +116,7 @@ class ExperimentBuilder(nn.Module):
         return loss.data, accuracy
 
     def save_model(self, model_save_dir, model_save_name, model_idx, best_validation_model_idx,
-                   best_validation_model_acc):
+                   best_validation_model_acc, epoch_time):
         """
         Save the network parameter state and current best val epoch idx and best val accuracy.
         :param model_save_name: Name to use to save model without the epoch index
@@ -131,6 +131,7 @@ class ExperimentBuilder(nn.Module):
         state['network'] = self.state_dict()  # save network parameter and other variables.
         state['best_val_model_idx'] = best_validation_model_idx  # save current best val idx
         state['best_val_model_acc'] = best_validation_model_acc  # save current best val acc
+        state['epoch_time'] = epoch_time
         torch.save(state, f=os.path.join(model_save_dir, "{}_{}".format(model_save_name, str(
             model_idx))))  # save state at prespecified filepath
 
@@ -196,7 +197,7 @@ class ExperimentBuilder(nn.Module):
                             # save model and best val idx and best val acc, using the model dir, model name and model idx
                             model_save_name="train_model", model_idx=epoch_idx,
                             best_validation_model_idx=self.best_val_model_idx,
-                            best_validation_model_acc=self.best_val_model_acc)
+                            best_validation_model_acc=self.best_val_model_acc, epoch_time=epoch_elapsed_time)
 
         print("Generating test set evaluation metrics")
         self.load_model(model_save_dir=self.experiment_saved_models, model_idx=self.best_val_model_idx,
