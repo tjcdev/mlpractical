@@ -41,6 +41,8 @@ def get_args():
                         help='Weight decay to use for Adam')
     parser.add_argument('--stride', nargs="?", type=int, default=1,
                         help='stride')
+    parser.add_argument('--dilation', nargs="?", type=int, default=1,
+                        help='dilation')
     args = parser.parse_args()
     print(args)
     return args
