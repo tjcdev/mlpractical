@@ -605,7 +605,7 @@ class MaxPooling2DLayer(Layer):
         
         X_reshaped = inputs.reshape(n * d, 1, h, w)
 
-        X_col = im.im2col_indices(X_reshaped, self.size, self.size, padding, self.stride)
+        X_col = conv.im2col_indices(X_reshaped, self.size, self.size, padding, self.stride)
 
         max_idx = np.argmax(X_col, axis=0)
 
@@ -637,7 +637,7 @@ class MaxPooling2DLayer(Layer):
         
         X_reshaped = inputs.reshape(n * d, 1, h, w)
 
-        X_col = im.im2col_indices(X_reshaped, self.size, self.size, padding, self.stride)
+        X_col = conv.im2col_indices(X_reshaped, self.size, self.size, padding, self.stride)
         
         dX_col = np.zeros_like(X_col)
         
@@ -653,7 +653,7 @@ class MaxPooling2DLayer(Layer):
 
         # We now have the stretched matrix of 4x9800, then undo it with col2im operation
         # dX would be 50x1x28x28
-        dX = im.col2im_indices(dX_col, (n * d, 1, h, w), self.size, self.size, padding=0, stride=self.stride)
+        dX = conv.col2im_indices(dX_col, (n * d, 1, h, w), self.size, self.size, padding=0, stride=self.stride)
 
         # Reshape back to match the input dimension: 5x10x28x28
         dX = dX.reshape(inputs.shape)
