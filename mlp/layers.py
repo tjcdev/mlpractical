@@ -15,7 +15,8 @@ respect to the layer parameters.
 import numpy as np
 import mlp.initialisers as init
 from mlp import DEFAULT_SEED
-import mlp.im2col as im
+import mlp.im2col as conv
+from scipy.signal import convolve2d 
 
 
 class Layer(object):
@@ -449,9 +450,26 @@ class ConvolutionalLayer(LayerWithParameters):
         Returns:
             outputs: Array of layer outputs of shape (batch_size, num_output_channels, output_height, output_width).
         """ 
+        N,C,H,W = inputs.shape
+        F,C,HH,WW = self.kernels.shape
+        output_height = inputs.shape[2] - self.kernel_height + 1
+        output_width = inputs.shape[3] - self.kernel_width + 1
+        
+        out = np.zeros([N,F,output_height,output_width])
+        
+        for im_num in range(N):
+            image = inputs[im_num,:,:,:]
+            im_col = conv.im2col(image,HH,WW,1)
+            filter_col = np.reshape(self.kernels,(F,-1))
+            mul = im_col.dot(filter_col.T) + self.biases
+            out[im_num,:,:,:] = conv.col2im(mul,output_height,output_width,1)
+        
+        return out
+        
+        '''
         X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
         W_col = self.kernels.reshape(self.kernels_shape[0], -1)
-        
+                
         out = np.dot(W_col, X_col) + self.biases[:, None]
         
         output_height = inputs.shape[2] - self.kernel_height + 1
@@ -462,15 +480,8 @@ class ConvolutionalLayer(LayerWithParameters):
         out = out.transpose(3, 0, 1, 2)
         
         self.cache = (inputs, W_col, self.biases, X_col)
-        
-        return out
-        '''       
-        out = out.transpose(3, 0, 1, 2)
-
-        cache = (X, W, b, stride, padding, X_col)
-
-        return out, cache
         '''
+        return out
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
         """Back propagates gradients through a layer.
@@ -488,9 +499,8 @@ class ConvolutionalLayer(LayerWithParameters):
         Returns:
             Array of gradients with respect to the layer inputs of shape
             (batch_size, num_input_channels, input_height, input_width).
-        """        
-        # TODO: use the cache for this bit and you might make it more efficient
-        X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
+        """  
+        X_col = conv.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
         
         dout_reshaped = grads_wrt_outputs.transpose(1, 2, 3, 0).reshape(self.kernels_shape[0], -1)     
         dW = np.dot(dout_reshaped, X_col.T)
@@ -500,10 +510,9 @@ class ConvolutionalLayer(LayerWithParameters):
         
         dX_col = np.dot(W_reshape.T, dout_reshaped)
         
-        dX = im.col2im_indices(dX_col, inputs.shape, self.kernel_height, self.kernel_width, padding=0)
+        dX = conv.col2im_indices(dX_col, inputs.shape, self.kernel_height, self.kernel_width, padding=0)
 
         return dX
-        
         
     def grads_wrt_params(self, inputs, grads_wrt_outputs):
         """Calculates gradients with respect to layer parameters.
@@ -517,7 +526,7 @@ class ConvolutionalLayer(LayerWithParameters):
             `[grads_wrt_kernels, grads_wrt_biases]`.
         """
         dout_reshaped = grads_wrt_outputs.transpose(1, 2, 3, 0).reshape(self.kernels_shape[0], -1)
-        X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
+        X_col = conv.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
 
         dW = np.dot(dout_reshaped, X_col.T)
         dW = dW.reshape(self.kernels.shape)
@@ -525,7 +534,7 @@ class ConvolutionalLayer(LayerWithParameters):
         db = np.sum(grads_wrt_outputs, axis=(0, 2, 3))
         db = db.reshape(self.kernels_shape[0], -1)
 
-        return [dW, db]
+        return (dW, db.reshape((db.shape[0],)))
 
     def params_penalty(self):
         """Returns the parameter dependent penalty term for this layer.
