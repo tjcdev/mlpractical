@@ -130,6 +130,7 @@ class ConvolutionalNetwork(nn.Module):
             out = F.relu(out)  # apply relu
             print(out.shape)
             if self.dim_reduction_type == 'strided_convolution':  # if dim reduction is strided conv, then add a strided conv
+                print("Creating Strided Layer with stride: " + str(self.stride) + " and dilation: " + str(self.dilation))
                 self.layer_dict['dim_reduction_strided_conv_{}'.format(i)] = nn.Conv2d(in_channels=out.shape[1],
                                                                                        kernel_size=3,
                                                                                        out_channels=out.shape[1],
@@ -141,6 +142,7 @@ class ConvolutionalNetwork(nn.Module):
                     out)  # use strided conv to get an output
                 out = F.relu(out)  # apply relu to the output
             elif self.dim_reduction_type == 'dilated_convolution':  # if dim reduction is dilated conv, then add a dilated conv, using an arbitrary dilation rate of i + 2 (so it gets smaller as we go, you can choose other dilation rates should you wish to do it.)
+                print("Creating Dilated Layer with stride: " + str(self.stride) + " and dilation: " + str(self.dilation))
                 self.layer_dict['dim_reduction_dilated_conv_{}'.format(i)] = nn.Conv2d(in_channels=out.shape[1],
                                                                                        kernel_size=3,
                                                                                        out_channels=out.shape[1],
