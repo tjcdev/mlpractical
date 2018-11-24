@@ -450,6 +450,7 @@ class ConvolutionalLayer(LayerWithParameters):
         Returns:
             outputs: Array of layer outputs of shape (batch_size, num_output_channels, output_height, output_width).
         """ 
+        '''
         N,C,H,W = inputs.shape
         F,C,HH,WW = self.kernels.shape
         output_height = inputs.shape[2] - self.kernel_height + 1
@@ -467,7 +468,7 @@ class ConvolutionalLayer(LayerWithParameters):
         return out
         
         '''
-        X_col = im.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
+        X_col = conv.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
         W_col = self.kernels.reshape(self.kernels_shape[0], -1)
                 
         out = np.dot(W_col, X_col) + self.biases[:, None]
@@ -480,7 +481,7 @@ class ConvolutionalLayer(LayerWithParameters):
         out = out.transpose(3, 0, 1, 2)
         
         self.cache = (inputs, W_col, self.biases, X_col)
-        '''
+        
         return out
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
