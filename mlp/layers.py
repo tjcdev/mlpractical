@@ -450,39 +450,27 @@ class ConvolutionalLayer(LayerWithParameters):
         Returns:
             outputs: Array of layer outputs of shape (batch_size, num_output_channels, output_height, output_width).
         """ 
-        '''
-        N,C,H,W = inputs.shape
-        F,C,HH,WW = self.kernels.shape
-        output_height = inputs.shape[2] - self.kernel_height + 1
-        output_width = inputs.shape[3] - self.kernel_width + 1
-        
-        out = np.zeros([N,F,output_height,output_width])
-        
-        for im_num in range(N):
-            image = inputs[im_num,:,:,:]
-            im_col = conv.im2col(image,HH,WW,1)
-            filter_col = np.reshape(self.kernels,(F,-1))
-            mul = im_col.dot(filter_col.T) + self.biases
-            out[im_num,:,:,:] = conv.col2im(mul,output_height,output_width,1)
-        
-        return out
-        
-        '''
+        # Convert out inputs into columns
         X_col = conv.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
+        
+        # Reshape our kernels into columns
         W_col = self.kernels.reshape(self.kernels_shape[0], -1)
                 
-        out = np.dot(W_col, X_col) + self.biases[:, None]
+        # Perform the convolution as a dot product on our column vectors
+        result = np.dot(W_col, X_col) + self.biases[:, None]
         
+        # Calculate the dimensions of the output using the image and kernel sizes
         output_height = inputs.shape[2] - self.kernel_height + 1
         output_width = inputs.shape[3] - self.kernel_width + 1
         
-        out = out.reshape(self.num_output_channels, output_height, output_width, inputs.shape[0])
+        # Reshape the result to be returned
+        result = result.reshape(self.num_output_channels, output_height, output_width, inputs.shape[0])   
+        result = result.transpose(3, 0, 1, 2)
         
-        out = out.transpose(3, 0, 1, 2)
-        
+        # Store some of our parameters in the cache
         self.cache = (inputs, W_col, self.biases, X_col)
         
-        return out
+        return result
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
         """Back propagates gradients through a layer.
@@ -501,19 +489,26 @@ class ConvolutionalLayer(LayerWithParameters):
             Array of gradients with respect to the layer inputs of shape
             (batch_size, num_input_channels, input_height, input_width).
         """  
+        # Calculate our input column vector
         X_col = conv.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
         
-        dout_reshaped = grads_wrt_outputs.transpose(1, 2, 3, 0).reshape(self.kernels_shape[0], -1)     
-        dW = np.dot(dout_reshaped, X_col.T)
-        dW = dW.reshape(self.kernels.shape)
+        # Reshape our gradients with respect to weights to enable the dot product
+        gwo_reshaped = grads_wrt_outputs.transpose(1, 2, 3, 0).reshape(self.kernels_shape[0], -1) 
         
+        # Calculate the gradients with respect to the weights
+        w_grad = np.dot(gwo_reshaped, X_col.T)
+        w_grad = w_grad.reshape(self.kernels.shape)
+        
+        # Reshape our weights to allow the matrix dot product
         W_reshape = self.kernels.reshape(self.kernels_shape[0], -1)
         
-        dX_col = np.dot(W_reshape.T, dout_reshaped)
+        # Calculate the gradients with respect to the inputs 
+        X_grad_col = np.dot(W_reshape.T, gwo_reshaped)
         
-        dX = conv.col2im_indices(dX_col, inputs.shape, self.kernel_height, self.kernel_width, padding=0)
+        # Reshape the gradients with respect to the inputs into output dimensions
+        X_grad = conv.col2im_indices(X_grad_col, inputs.shape, self.kernel_height, self.kernel_width, padding=0)
 
-        return dX
+        return X_grad
         
     def grads_wrt_params(self, inputs, grads_wrt_outputs):
         """Calculates gradients with respect to layer parameters.
@@ -526,16 +521,21 @@ class ConvolutionalLayer(LayerWithParameters):
             list of arrays of gradients with respect to the layer parameters
             `[grads_wrt_kernels, grads_wrt_biases]`.
         """
-        dout_reshaped = grads_wrt_outputs.transpose(1, 2, 3, 0).reshape(self.kernels_shape[0], -1)
+        # Reshape our gradients with respect to the outputs to enable a dot product
+        gwo_reshaped = grads_wrt_outputs.transpose(1, 2, 3, 0).reshape(self.kernels_shape[0], -1)
+
+        # Get our column vectors for our inputs
         X_col = conv.im2col_indices(inputs, self.kernel_height, self.kernel_width, padding=0)
 
-        dW = np.dot(dout_reshaped, X_col.T)
-        dW = dW.reshape(self.kernels.shape)
+        # Calculate gradient with respect to the weights using a matrix dot product
+        w_grad = np.dot(gwo_reshaped, X_col.T)
+        w_grad = w_grad.reshape(self.kernels.shape)
     
-        db = np.sum(grads_wrt_outputs, axis=(0, 2, 3))
-        db = db.reshape(self.kernels_shape[0], -1)
+        # Calculate the grads wrt to biases
+        bias_grad = np.sum(grads_wrt_outputs, axis=(0, 2, 3))
+        bias_grad = bias_grad.reshape(self.kernels_shape[0], -1)
 
-        return (dW, db.reshape((db.shape[0],)))
+        return (w_grad, bias_grad.reshape((bias_grad.shape[0],)))
 
     def params_penalty(self):
         """Returns the parameter dependent penalty term for this layer.
@@ -596,30 +596,29 @@ class MaxPooling2DLayer(Layer):
         :return: The output of the max pooling operation. Assuming a stride=2 the output should have a shape of
         (b, c, (input_height - size)/stride + 1, (input_width - size)/stride + 1)
         """
-        # First, reshape it to 50x1x28x28 to make im2col arranges it fully in column
-        
-        n = inputs.shape[0]
-        d = inputs.shape[1]
-        h = inputs.shape[2]
-        w = inputs.shape[3]
         padding=0
         
-        X_reshaped = inputs.reshape(n * d, 1, h, w)
+        # Reshape our inputs to allow them to be made into column vectors
+        inputs_reshaped = inputs.reshape(inputs.shape[0]*inputs.shape[1], 1, inputs.shape[2], inputs.shape[3])
 
-        X_col = conv.im2col_indices(X_reshaped, self.size, self.size, padding, self.stride)
+        # Obtain the column vectors for our inputs
+        X_col = conv.im2col_indices(inputs_reshaped, self.size, self.size, padding, self.stride)
 
+        # Get the index of the maximum element in our inputs
         max_idx = np.argmax(X_col, axis=0)
 
-        out = X_col[max_idx, range(max_idx.size)]
+        # Get the maximum element in our input
+        result = X_col[max_idx, range(max_idx.size)]
 
-        h_out = int((h - self.size)/self.stride + 1)
-        w_out = int((w - self.size)/self.stride + 1)
+        # Calculate the output shape from our inputs, size and stride
+        output_height = int((inputs.shape[2] - self.size)/self.stride + 1)
+        output_width = int((inputs.shape[3] - self.size)/self.stride + 1)
 
-        out = out.reshape(h_out, w_out, n, d)
-
-        out = out.transpose(2, 3, 0, 1)
+        # Reshape the result before returning
+        result = result.reshape(output_height, output_width, inputs.shape[0], inputs.shape[1])
+        result = result.transpose(2, 3, 0, 1)
         
-        return out
+        return result
 
     def bprop(self, inputs, outputs, grads_wrt_outputs):
         """
@@ -630,36 +629,31 @@ class MaxPooling2DLayer(Layer):
         :param grads_wrt_outputs: The grads wrt to the outputs, of shape equal to that of the outputs.
         :return: grads_wrt_input, of shape equal to the inputs.
         """
-        n = inputs.shape[0]
-        d = inputs.shape[1]
-        h = inputs.shape[2]
-        w = inputs.shape[3]
         padding=0
         
-        X_reshaped = inputs.reshape(n * d, 1, h, w)
+        # Reshape out inputs so we can create a column vector
+        inputs_reshaped = inputs.reshape(inputs.shape[0]*inputs.shape[1], 1, inputs.shape[2], inputs.shape[3])
 
-        X_col = conv.im2col_indices(X_reshaped, self.size, self.size, padding, self.stride)
+        # Create a column matrix for our input
+        X_col = conv.im2col_indices(inputs_reshaped, self.size, self.size, padding, self.stride)
         
-        dX_col = np.zeros_like(X_col)
+        # Create an empty array for storing out input gradient column
+        X_grad_col = np.zeros_like(X_col)
         
-        dout_flat = grads_wrt_outputs.transpose(2, 3, 0, 1).ravel()
+        # Reshape out gradients wrt to the outputs into a column
+        out_grad_col = grads_wrt_outputs.transpose(2, 3, 0, 1).reshape(-1)
 
+        # Find the index of the maximum element and then pick that element out the array
         max_idx = np.argmax(X_col, axis=0)
+        X_grad_col[max_idx, range(max_idx.size)] = out_grad_col
+
+        # Get the gradient wrt to the inputs
+        X_grad = conv.col2im_indices(X_grad_col, (inputs.shape[0]*inputs.shape[1], 1, inputs.shape[2], inputs.shape[3]), self.size, self.size, padding=0, stride=self.stride)
+
+        # Reshape our gradients to be returned
+        X_grad = X_grad.reshape(inputs.shape)
         
-        # Fill the maximum index of each column with the gradient
-
-        # Essentially putting each of the 9800 grads
-        # to one of the 4 row in 9800 locations, one at each column
-        dX_col[max_idx, range(max_idx.size)] = dout_flat
-
-        # We now have the stretched matrix of 4x9800, then undo it with col2im operation
-        # dX would be 50x1x28x28
-        dX = conv.col2im_indices(dX_col, (n * d, 1, h, w), self.size, self.size, padding=0, stride=self.stride)
-
-        # Reshape back to match the input dimension: 5x10x28x28
-        dX = dX.reshape(inputs.shape)
-        
-        return dX
+        return X_grad
 
 
 class ReluLayer(Layer):
