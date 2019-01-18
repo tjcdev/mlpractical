@@ -244,6 +244,8 @@ class EMNISTDataProvider(DataProvider):
             inputs = np.reshape(inputs, newshape=(-1, 1, 28, 28))
         inputs = inputs / 255.0
         # pass the loaded data to the parent class __init__
+        print(inputs.shape)
+        print(targets.shape)
         super(EMNISTDataProvider, self).__init__(
             inputs, targets, batch_size, max_num_batches, shuffle_order, rng)
 
